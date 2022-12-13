@@ -125,8 +125,8 @@ class TransformerXL(object):
     # data augmentation
     ########################################
     # return 
-    def get_epoch_augmented_data(self, epoch, ep_start_pitchaug=10, pitchaug_range=(-3, 3)):
-        pitchaug_range = [x for x in range(pitchaug_range[0], pitchaug_range[1] + 1)]
+    def get_epoch_augmented_data(self, epoch, ep_start_pitchaug=10, pitchaug_range=3):
+        pitchaug_range = [x for x in range(-pitchaug_range, pitchaug_range + 1)]
         training_data = []
         for seq in self.training_seqs:
             # pitch augmentation
@@ -240,7 +240,7 @@ class TransformerXL(object):
     ########################################
     # train w/ augmentation
     ########################################
-    def train_augment(self, output_checkpoint_folder, pitchaug_range=(-3, 3), logfile=None):
+    def train_augment(self, output_checkpoint_folder, pitchaug_range=3, logfile=None):
 
         assert self.training_seqs is not None
 
@@ -258,7 +258,7 @@ class TransformerXL(object):
         for e in range(10):
             # one epoch
             # get all data with augmentation
-            training_data, num_batches = self.get_epoch_augmented_data(e)
+            training_data, num_batches = self.get_epoch_augmented_data(e, pitchaug_range=pitchaug_range)
             
             total_loss = []
             for i in range(num_batches):

@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('ckpt_dir' , help="the folder to save checkpoints")
 parser.add_argument('log_file' , help="the file path to save log file")
 parser.add_argument('--augment' , action="store_true" , help="train the model with data augmentation")
+parser.add_argument('--pitchaug_range' , type=int , default=3 , help="range of the pitch transposition")
 
 args = parser.parse_args()
 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
   
   # train
   if args.augment:
-      model.train_augment(output_checkpoint_folder=args.ckpt_dir, logfile=args.log_file)
+      model.train_augment(output_checkpoint_folder=args.ckpt_dir, pitchaug_range=args.pitchaug_range, logfile=args.log_file)
   else:
       model.train(output_checkpoint_folder=args.ckpt_dir, logfile=args.log_file)
   
