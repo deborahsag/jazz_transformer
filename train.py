@@ -56,7 +56,7 @@ if __name__ == '__main__':
   if args.augment:
       model.train_augment(output_checkpoint_folder=args.ckpt_dir, logfile=args.log_file)
   else:
-      model.train(training_data=training_seqs, output_checkpoint_folder=args.ckpt_dir)
+      model.train(output_checkpoint_folder=args.ckpt_dir, logfile=args.log_file)
   
   # close
   model.close()

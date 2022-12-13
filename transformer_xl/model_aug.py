@@ -200,6 +200,43 @@ class TransformerXL(object):
         print ("training_data.shape , num_batches = {} , {}".format(training_data.shape,num_batches))
         return training_data, num_batches
 
+    def get_training_data(self):
+        training_data = []
+        for seq in self.training_seqs:
+            # padding sequence to fit the entry length
+            if len(seq) < self.entry_len + 1:
+                padlen = self.entry_len - len(seq)
+                seq.append(1)
+                seq.extend([0 for x in range(padlen)])
+
+            # put pairs into training data by groups
+            pairs = []
+            for i in range(0, len(seq) - self.x_len, self.x_len):
+                x, y = seq[i:i + self.x_len], seq[i + 1: i + self.x_len + 1]
+                assert len(x) == self.x_len
+                assert len(y) == self.x_len
+                pairs.append([x, y])
+
+            pairs = np.array(pairs)
+
+            for i in range(0, len(pairs) - self.group_size + 1, self.group_size):
+                segment = pairs[i:i + self.group_size]
+                assert len(segment) == self.group_size
+                training_data.append(segment)
+
+        training_data = np.array(training_data)
+
+        # shuffle training data
+        reorder_index = np.arange(len(training_data))
+        np.random.shuffle(reorder_index)
+        training_data = training_data[reorder_index]
+
+        num_batches = len(training_data) // self.batch_size
+
+        # training_data shape (group count, self.group_size, pair(x,y), 512)
+        print("training_data.shape , num_batches = {} , {}".format(training_data.shape,num_batches))
+        return training_data, num_batches
+
     ########################################
     # train w/ augmentation
     ########################################
@@ -242,8 +279,6 @@ class TransformerXL(object):
 
                     # self.mems_i a placeholder for memory of all layers in transformer
                     # self.mems_i = [tf.compat.v1.placeholder(tf.float32, [self.mem_len, self.batch_size, self.d_model]) for _ in range(self.n_layer)]
-                    
-                    
 
                     for m, m_np in zip(self.mems_i, batch_m):
                         feed_dict[m] = m_np
@@ -269,21 +304,35 @@ class TransformerXL(object):
     ########################################
     # train
     ########################################
-    def train(self, training_data, output_checkpoint_folder):
+    def train(self, output_checkpoint_folder, logfile=None):
+
+        assert self.training_seqs is not None
+
         # check output folder
         if not os.path.exists(output_checkpoint_folder):
             os.mkdir(output_checkpoint_folder)
-        # shuffle
-        index = np.arange(len(training_data))
-        np.random.shuffle(index)
-        training_data = training_data[index]
-        num_batches = len(training_data) // self.batch_size
+
+        # check log file folder
+        if logfile:
+            if not os.path.dirname(logfile) == "":
+                os.makedirs(os.path.dirname(logfile), exist_ok=True)
+
         st = time.time()
+
+        # get training data
+        training_data, num_batches = self.get_training_data()
+
         for e in range(1000):
+            # one epoch
             total_loss = []
             for i in range(num_batches):
+                # in one batch
+                # get one batch data
                 segments = training_data[self.batch_size*i:self.batch_size*(i+1)]
+
+                # memory cache for all layers of tranformer
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in range(self.n_layer)]
+
                 for j in range(self.group_size):
                     batch_x = segments[:, j, 0, :]
                     batch_y = segments[:, j, 1, :]
@@ -291,8 +340,10 @@ class TransformerXL(object):
                     feed_dict = {self.x: batch_x, self.y: batch_y}
                     for m, m_np in zip(self.mems_i, batch_m):
                         feed_dict[m] = m_np
+
                     # run
                     _, gs_, loss_, new_mem_ = self.sess.run([self.train_op, self.global_step, self.avg_loss, self.new_mem], feed_dict=feed_dict)
+
                     batch_m = new_mem_
                     total_loss.append(loss_)
                     # print ('Current lr: {}'.format(self.sess.run(self.optimizer._lr)))
@@ -301,6 +352,9 @@ class TransformerXL(object):
             print ('[epoch {} avg loss] {:.5f}'.format(e, np.mean(total_loss)))
             if not e % 6:
                 self.saver.save(self.sess, '{}/model-{:03d}-{:.3f}'.format(output_checkpoint_folder, e, np.mean(total_loss)))
+                if logfile:
+                    with open(logfile, 'a') as f:
+                        f.write('epoch = {:03d} | loss = {:.5f} | time = {:.2f}\n'.format(e, np.mean(total_loss), time.time() - st))
             # stop
             if np.mean(total_loss) <= 0.05:
                 break
