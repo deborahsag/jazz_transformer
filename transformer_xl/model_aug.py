@@ -16,15 +16,15 @@ class TransformerXL(object):
         self.event2word = event2word
         self.word2event = word2event
         # model settings
-        self.x_len = 512      #input sequence length
-        self.mem_len = 512    #
+        self.x_len = 128      #input sequence length
+        self.mem_len = 128    #
         self.n_layer = 3
-        self.d_embed = 512
-        self.d_model = 512
+        self.d_embed = 128
+        self.d_model = 128
         self.dropout = 0.1
         self.n_head = 2
         self.d_head = self.d_model // self.n_head
-        self.d_ff = 2048
+        self.d_ff = 512
         self.n_token = len(self.event2word)
         self.learning_rate = 2e-4
         self.group_size = 3
