@@ -18,11 +18,11 @@ class TransformerXL(object):
         # model settings
         self.x_len = 512      #input sequence length
         self.mem_len = 512    #
-        self.n_layer = 12
+        self.n_layer = 3
         self.d_embed = 512
         self.d_model = 512
         self.dropout = 0.1
-        self.n_head = 8
+        self.n_head = 2
         self.d_head = self.d_model // self.n_head
         self.d_ff = 2048
         self.n_token = len(self.event2word)
@@ -255,7 +255,7 @@ class TransformerXL(object):
         
         st = time.time()
 
-        for e in range(1000):
+        for e in range(10):
             # one epoch
             # get all data with augmentation
             training_data, num_batches = self.get_epoch_augmented_data(e)
@@ -322,7 +322,7 @@ class TransformerXL(object):
         # get training data
         training_data, num_batches = self.get_training_data()
 
-        for e in range(1000):
+        for e in range(10):
             # one epoch
             total_loss = []
             for i in range(num_batches):
