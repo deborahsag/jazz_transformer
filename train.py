@@ -44,6 +44,9 @@ if __name__ == '__main__':
   # show size of trqaining data
   print("Training data count: {}".format(len(training_seqs)))
 
+  # show range of augmentation
+  print("Range of pitch transposition in augmentation: {}".format(args.pitchaug_range))
+
 
   # declare model
   model = TransformerXL(
