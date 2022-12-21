@@ -45,7 +45,8 @@ if __name__ == '__main__':
   print("Training data count: {}".format(len(training_seqs)))
 
   # show range of augmentation
-  print("Range of pitch transposition in augmentation: {}".format(args.pitchaug_range))
+  if args.augment:
+      print("Range of pitch transposition in augmentation: {}".format(args.pitchaug_range))
 
 
   # declare model
