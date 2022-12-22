@@ -1,6 +1,7 @@
 from glob import glob
 import numpy as np
 import pandas as pd
+import regex as re
 import os, sys, pickle , argparse
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -37,6 +38,15 @@ def seq_to_csv(seq, word2event, out_csv):
 
     return
 
+
+def get_checkpoint(model_dir):
+    path = os.path.join(model_dir, "checkpoint")
+    ckpt_file = open(path, 'r')
+    line = ckpt_file.readline()
+    ckpt_file.close()
+    ckpt = re.findall('"(.*)"', line)
+    return os.path.join(model_dir, ckpt[0])
+
 if __name__ == '__main__':
     # load dictionary
     vocab = pickle.load(open('pickles/remi_wstruct_vocab.pkl', 'rb'))
@@ -48,11 +58,13 @@ if __name__ == '__main__':
         if not os.path.exists(out_midi_dir):
             os.makedirs(out_midi_dir)
 
+    checkpoint = get_checkpoint(args.model)
+
     # declare model
     model = TransformerXL(
         event2word=event2word,
         word2event=word2event,
-        checkpoint=args.model,
+        checkpoint=checkpoint,
         is_training=False
     )
 
@@ -78,7 +90,7 @@ if __name__ == '__main__':
         midi_name = "jazz-sample-" + str(i) + ".midi"
         out_midi_file = os.path.join(out_midi_dir, midi_name)
         try:
-            if args.struct_csv:
+            if out_csv_dir:
                 csv_name = "jazz-sample-" + str(i) + ".csv"
                 out_struct_csv_file = os.path.join(out_csv_dir, csv_name)
                 convert_events_to_midi(events, out_midi_file, chord_processor, use_structure=True, output_struct_csv=out_struct_csv_file)
