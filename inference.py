@@ -68,25 +68,23 @@ if __name__ == '__main__':
         is_training=False
     )
 
-    # inference
-    # recommended temperature = 1.2
-    word_seq = model.inference(
-        n_bars=args.n_bars,
-        strategies=['temperature', 'nucleus'],
-        params={'t': args.temp, 'p': 0.9},
-        use_structure=True
-    )
-    # close
-    model.close()
-
-    events = [ word2event[w] for w in word_seq ]
-    print ("First 20 events: {}".format(events[:20]))
-    chord_processor = pickle.load(open('pickles/chord_processor.pkl', 'rb'))
-
-    if out_csv_dir:
-        print('struct csv will be written to:', out_csv_dir)
-
     for i in range(args.n_samples):
+        # inference
+        # recommended temperature = 1.2
+        word_seq = model.inference(
+            n_bars=args.n_bars,
+            strategies=['temperature', 'nucleus'],
+            params={'t': args.temp, 'p': 0.9},
+            use_structure=True
+        )
+
+        events = [ word2event[w] for w in word_seq ]
+        print ("First 20 events: {}".format(events[:20]))
+        chord_processor = pickle.load(open('pickles/chord_processor.pkl', 'rb'))
+
+        if out_csv_dir:
+            print('struct csv will be written to:', out_csv_dir)
+
         midi_name = "jazz-sample-" + str(i) + ".midi"
         out_midi_file = os.path.join(out_midi_dir, midi_name)
         try:
@@ -103,3 +101,5 @@ if __name__ == '__main__':
             print ('error occurred when converting to', out_midi_file)
             print (e)
 
+    # close
+    model.close()
