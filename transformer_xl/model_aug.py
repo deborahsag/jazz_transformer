@@ -255,7 +255,7 @@ class TransformerXL(object):
         
         st = time.time()
 
-        for e in range(10):
+        for e in range(1000):
             # one epoch
             # get all data with augmentation
             training_data, num_batches = self.get_epoch_augmented_data(e, pitchaug_range=pitchaug_range)
@@ -322,7 +322,7 @@ class TransformerXL(object):
         # get training data
         training_data, num_batches = self.get_training_data()
 
-        for e in range(10):
+        for e in range(1000):
             # one epoch
             total_loss = []
             for i in range(num_batches):
