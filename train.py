@@ -3,8 +3,9 @@ import sys, pickle , os
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('ckpt_dir' , help="the folder to save checkpoints")
-parser.add_argument('log_file' , help="the file path to save log file")
+parser.add_argument('-ckpt_dir' , help="the folder to save checkpoints")
+parser.add_argument('-log_file' , help="the file path to save log file")
+parser.add_argument('-data_file', default='data/training_seqs_struct_new_final.pkl', help="the file path to the pickle file containing the training data")
 parser.add_argument('--augment' , action="store_true" , help="train the model with data augmentation")
 parser.add_argument('--pitchaug_range' , type=int , default=3 , help="range of the pitch transposition")
 
@@ -37,7 +38,7 @@ if __name__ == '__main__':
   
   # load train data
   # training_seqs_final.pkl : all songs' remi format
-  training_data_file = "data/training_seqs_struct_new_final.pkl"
+  training_data_file = args.data_file
   print("loading training data from {}".format(training_data_file))
   training_seqs = pickle.load( open(training_data_file, 'rb') )
 
