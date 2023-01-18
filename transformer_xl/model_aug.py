@@ -132,7 +132,7 @@ class TransformerXL(object):
             # pitch augmentation
             if epoch >= ep_start_pitchaug:
                 seq = deepcopy(seq)
-                pitch_change = random.choice( pitchaug_range )
+                pitch_change = random.choice(pitchaug_range)
                 for i, ev in enumerate(seq):
                     #  event_id = 21 -> Note-On_21 : the lowest pitch on piano
                     if 'Note-On' in self.word2event[ev] and ev >= 21:
@@ -158,58 +158,19 @@ class TransformerXL(object):
                 seq.append(1)
                 seq.extend([0 for x in range(padlen)])
 
-
             # first 10 epoch let the input include start or end of the song
             # -1 for assertion : len(seq) % self.entry_len == 1 (for x,y pair purpose)
             if epoch < 10:
-              offset = random.choice([0, (len(seq) % self.entry_len) - 1]) # only 2 possible return value 
+              offset = random.choice([0, (len(seq) % self.entry_len) - 1]) # only 2 possible return value
             else:
               offset = random.randint(0, (len(seq) % self.entry_len) - 1)  # all entries in the list are possible return value
 
             assert offset + 1 + self.entry_len * (len(seq) // self.entry_len) <= len(seq)
 
-            seq = seq[ offset : offset + 1 + self.entry_len * (len(seq) // self.entry_len) ]
+            seq = seq[offset: offset + 1 + self.entry_len * (len(seq) // self.entry_len)]
 
             assert len(seq) % self.entry_len == 1
 
-            pairs = []
-            for i in range(0, len(seq) - self.x_len, self.x_len):
-                x, y = seq[i:i+self.x_len], seq[ i+1 : i+self.x_len+1 ]
-                assert len(x) == self.x_len
-                assert len(y) == self.x_len
-                pairs.append([x, y])
-
-            pairs = np.array(pairs)
-
-            # put pairs into training data by groups
-            for i in range(0, len(pairs) - self.group_size + 1, self.group_size):
-                segment = pairs[i:i+self.group_size]
-                assert len(segment) == self.group_size
-                training_data.append(segment)
-
-        training_data = np.array(training_data)
-
-        # shuffle training data
-        reorder_index = np.arange(len(training_data))
-        np.random.shuffle( reorder_index )
-        training_data = training_data[ reorder_index ]
-
-        num_batches = len(training_data) // self.batch_size
-        # training_data shape (666, 3, 2, 512)
-        # training_data shape (group count, self.group_size, pair(x,y), 512)
-        print ("training_data.shape , num_batches = {} , {}".format(training_data.shape,num_batches))
-        return training_data, num_batches
-
-    def get_training_data(self):
-        training_data = []
-        for seq in self.training_seqs:
-            # padding sequence to fit the entry length
-            if len(seq) < self.entry_len + 1:
-                padlen = self.entry_len - len(seq)
-                seq.append(1)
-                seq.extend([0 for x in range(padlen)])
-
-            # put pairs into training data by groups
             pairs = []
             for i in range(0, len(seq) - self.x_len, self.x_len):
                 x, y = seq[i:i + self.x_len], seq[i + 1: i + self.x_len + 1]
@@ -219,6 +180,58 @@ class TransformerXL(object):
 
             pairs = np.array(pairs)
 
+            # put pairs into training data by groups
+            for i in range(0, len(pairs) - self.group_size + 1, self.group_size):
+                segment = pairs[i:i + self.group_size]
+                assert len(segment) == self.group_size
+                training_data.append(segment)
+
+        training_data = np.array(training_data)
+
+        # shuffle training data
+        reorder_index = np.arange(len(training_data))
+        np.random.shuffle(reorder_index)
+        training_data = training_data[reorder_index]
+
+        num_batches = len(training_data) // self.batch_size
+
+        # training_data shape (666, 3, 2, 512)
+        # training_data shape (group count, self.group_size, pair(x,y), 512)
+        print("training_data.shape , num_batches = {} , {}".format(training_data.shape, num_batches))
+        return training_data, num_batches
+
+    def get_epoch_data(self, epoch):
+        training_data = []
+        for seq in self.training_seqs:
+            # padding sequence to fit the entry length
+            if len(seq) < self.entry_len + 1:
+                padlen = self.entry_len - len(seq)
+                seq.append(1)
+                seq.extend([0 for x in range(padlen)])
+
+            # first 10 epoch let the input include start or end of the song
+            # -1 for assertion : len(seq) % self.entry_len == 1 (for x,y pair purpose)
+            if epoch < 10:
+                offset = random.choice([0, (len(seq) % self.entry_len) - 1])  # only 2 possible return value
+            else:
+                offset = random.randint(0, (len(seq) % self.entry_len) - 1)  # all entries in the list are possible return value
+
+            assert offset + 1 + self.entry_len * (len(seq) // self.entry_len) <= len(seq)
+
+            seq = seq[offset: offset + 1 + self.entry_len * (len(seq) // self.entry_len)]
+
+            assert len(seq) % self.entry_len == 1
+
+            pairs = []
+            for i in range(0, len(seq) - self.x_len, self.x_len):
+                x, y = seq[i:i + self.x_len], seq[i + 1: i + self.x_len + 1]
+                assert len(x) == self.x_len
+                assert len(y) == self.x_len
+                pairs.append([x, y])
+
+            pairs = np.array(pairs)
+
+            # put pairs into training data by groups
             for i in range(0, len(pairs) - self.group_size + 1, self.group_size):
                 segment = pairs[i:i + self.group_size]
                 assert len(segment) == self.group_size
@@ -241,7 +254,6 @@ class TransformerXL(object):
     # train w/ augmentation
     ########################################
     def train_augment(self, output_checkpoint_folder, pitchaug_range=3, logfile=None):
-
         assert self.training_seqs is not None
 
         # check output folder
@@ -251,24 +263,24 @@ class TransformerXL(object):
         # check log file folder
         if logfile:
             if not os.path.dirname(logfile) == "":
-                os.makedirs(os.path.dirname(logfile),exist_ok=True) 
-        
+                os.makedirs(os.path.dirname(logfile), exist_ok=True)
+
         st = time.time()
 
         for e in range(1000):
             # one epoch
             # get all data with augmentation
             training_data, num_batches = self.get_epoch_augmented_data(e, pitchaug_range=pitchaug_range)
-            
+
             total_loss = []
             for i in range(num_batches):
                 # in one batch
                 # get one batch data
-                segments = training_data[self.batch_size*i:self.batch_size*(i+1)]
+                segments = training_data[self.batch_size * i:self.batch_size * (i + 1)]
 
-                # memory cache for all layers of tranformer
+                # memory cache for all layers of transformer
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in range(self.n_layer)]
-                
+
                 for j in range(self.group_size):
                     batch_x = segments[:, j, 0, :]
                     batch_y = segments[:, j, 1, :]
@@ -285,13 +297,13 @@ class TransformerXL(object):
 
                     # run
                     _, gs_, loss_, new_mem_ = self.sess.run([self.train_op, self.global_step, self.avg_loss, self.new_mem], feed_dict=feed_dict)
-                    
+
                     batch_m = new_mem_
                     total_loss.append(loss_)
                     # print ('Current lr: {}'.format(self.sess.run(self.optimizer._lr)))
-                    print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time()-st)) 
-            
-            print ('[epoch {} avg loss] {:.5f}'.format(e, np.mean(total_loss)))
+                    print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
+
+            print('[epoch {} avg loss] {:.5f}'.format(e, np.mean(total_loss)))
             if e >= 0:
                 self.saver.save(self.sess, '{}/model-{:03d}-{:.3f}'.format(output_checkpoint_folder, e, np.mean(total_loss)))
                 if logfile:
@@ -305,7 +317,6 @@ class TransformerXL(object):
     # train
     ########################################
     def train(self, output_checkpoint_folder, logfile=None):
-
         assert self.training_seqs is not None
 
         # check output folder
@@ -319,18 +330,18 @@ class TransformerXL(object):
 
         st = time.time()
 
-        # get training data
-        training_data, num_batches = self.get_training_data()
-
         for e in range(1000):
             # one epoch
+            # get all training data
+            training_data, num_batches = self.get_epoch_data(e)
+
             total_loss = []
             for i in range(num_batches):
                 # in one batch
                 # get one batch data
-                segments = training_data[self.batch_size*i:self.batch_size*(i+1)]
+                segments = training_data[self.batch_size * i:self.batch_size * (i + 1)]
 
-                # memory cache for all layers of tranformer
+                # memory cache for all layers of transformer
                 batch_m = [np.zeros((self.mem_len, self.batch_size, self.d_model), dtype=np.float32) for _ in range(self.n_layer)]
 
                 for j in range(self.group_size):
@@ -347,10 +358,10 @@ class TransformerXL(object):
                     batch_m = new_mem_
                     total_loss.append(loss_)
                     # print ('Current lr: {}'.format(self.sess.run(self.optimizer._lr)))
-                    print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time()-st))
+                    print('>>> Epoch: {}, Step: {}, Loss: {:.5f}, Time: {:.2f}'.format(e, gs_, loss_, time.time() - st))
 
-            print ('[epoch {} avg loss] {:.5f}'.format(e, np.mean(total_loss)))
-            if not e % 6:
+            print('[epoch {} avg loss] {:.5f}'.format(e, np.mean(total_loss)))
+            if e >= 0:
                 self.saver.save(self.sess, '{}/model-{:03d}-{:.3f}'.format(output_checkpoint_folder, e, np.mean(total_loss)))
                 if logfile:
                     with open(logfile, 'a') as f:
@@ -439,7 +450,7 @@ class TransformerXL(object):
         initial_flag, initial_cnt = True, 0
         generated_bars = 0
 
-        # define legal beat posisition
+        # define legal beat position
         beat_pos = set(['Position_0/64', 'Position_16/64', 'Position_32/64', 'Position_48/64'])
 
         allowed_pos = set([x for x in range(self.event2word['Position_0/64'] + 1, self.event2word['Position_0/64'] + 17)])
