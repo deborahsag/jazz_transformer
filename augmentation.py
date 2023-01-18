@@ -1,4 +1,5 @@
 import argparse
+import os
 import pickle
 import random
 import sys
@@ -6,8 +7,8 @@ from copy import deepcopy
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('-pitch_change', type=int, help="number of tones to be transposed up and down the scale")
-parser.add_argument('-out_dir', default='data', help="output file directory")
+parser.add_argument('-pitch_range', type=int, default=3, help="range of tones to be transposed up and down the scale")
+parser.add_argument('-out_dir', default="./data/augmented", help="output file directory")
 
 args = parser.parse_args()
 
@@ -46,11 +47,10 @@ def pitch_augmentation_random(training_seqs, word2event, event2word, pitchaug_ra
 
 
 def pitch_augmentation_fixed(training_seqs, word2event, event2word, pitchaug_range=3):
-    pitchaug_range = [-pitchaug_range, pitchaug_range]
     augmented_seqs = []
     for sequence in training_seqs:
         seq = deepcopy(sequence)
-        for pitch_change in pitchaug_range:
+        for pitch_change in (-pitchaug_range, pitchaug_range):
             for i, ev in enumerate(seq):
                 #  event_id = 21 -> Note-On_21 : the lowest pitch on piano
                 if 'Note-On' in word2event[ev] and ev >= 21:
@@ -84,12 +84,23 @@ def main():
     training_data_file = "data/training_seqs_struct_new_final.pkl"
     training_seqs = pickle.load(open(training_data_file, 'rb'))
 
-    pitch_range = args.pitch_change
+    pitch_range = args.pitch_range
 
-    augmented_seqs = pitch_augmentation_fixed(training_seqs, word2event, event2word, pitch_range)
+    out_dir = args.out_dir
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
 
-    outfile = f'data/augmented_{pitch_range}.pkl'
-    pickle.dump(augmented_seqs, open(outfile, 'wb'))
+    total_seqs = deepcopy(training_seqs)
+    for pitch in range(1, pitch_range + 1):
+        augmented_seqs = pitch_augmentation_fixed(training_seqs, word2event, event2word, pitch)
+        outfile_name = f'aug_{pitch}.pkl'
+        outfile = os.path.join(out_dir, outfile_name)
+        pickle.dump(augmented_seqs, open(outfile, 'wb'))
+        total_seqs.append(augmented_seqs)
+
+    outfile_name = f'aug_range_{pitch_range}.pkl'
+    outfile = os.path.join(out_dir, outfile_name)
+    pickle.dump(total_seqs, open(outfile, 'wb'))
 
 
 if __name__ == '__main__':
