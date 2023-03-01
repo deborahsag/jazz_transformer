@@ -109,7 +109,7 @@ class TransformerXL(object):
         #     alpha=0.004
         # )
         self.optimizer = tf.compat.v1.train.AdamOptimizer(learning_rate=decay_lr)
-        self.train_op = self.optimizer.apply_gradients(grads_and_vars, self.global_step)
+        self.train_op = self.optimizer._distributed_apply(grads_and_vars, self.global_step)
         # saver
         self.saver = tf.compat.v1.train.Saver(max_to_keep=100)
         config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
