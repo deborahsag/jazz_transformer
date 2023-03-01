@@ -17,6 +17,7 @@ sys.path.append('./src/')
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from glob import glob
 from build_vocab import Vocab
 
@@ -28,6 +29,18 @@ from model_aug import TransformerXL
 
 
 if __name__ == '__main__':
+
+    print("Tensorflow version " + tf.__version__)
+
+    try:
+      tpu = tf.distribute.cluster_resolver.TPUClusterResolver()  # TPU detection
+      print('Running on TPU ', tpu.cluster_spec().as_dict()['worker'])
+    except ValueError:
+      raise BaseException('ERROR: Not connected to a TPU runtime ')
+
+    tf.config.experimental_connect_to_cluster(tpu)
+    tf.tpu.experimental.initialize_tpu_system(tpu)
+    tpu_strategy = tf.distribute.TPUStrategy(tpu)
 
     with tpu_strategy.scope(): # creating the model in the TPUStrategy scope means we will train the model on the TPU
 
